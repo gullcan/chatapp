@@ -50,7 +50,7 @@ public class MessageController : ControllerBase
         }
 
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(60);
+        client.Timeout = TimeSpan.FromSeconds(90); // Increased for queue polling
 
         // AI service base url from env: AI_SERVICE_URL (e.g., https://<username>-ai-service.hf.space)
         var aiBaseUrl = _config["AI_SERVICE_URL"] ?? Environment.GetEnvironmentVariable("AI_SERVICE_URL");
@@ -59,46 +59,77 @@ public class MessageController : ControllerBase
             return StatusCode(500, new { error = "AI_SERVICE_URL is not configured" });
         }
 
-        var payload = new { data = new string[] { request.Text } };
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-
-        var baseUrl = aiBaseUrl.TrimEnd('/');
-        var firstUrl = baseUrl + "/api/predict";
-        var secondUrl = baseUrl + "/run/predict"; // fallback for older Gradio
-
-        HttpResponseMessage response;
-        string json;
-
-        // Try primary endpoint
-        response = await client.PostAsync(firstUrl, content);
-        if (!response.IsSuccessStatusCode)
+        // Add HuggingFace API token for authentication
+        var hfToken = _config["HF_TOKEN"] ?? Environment.GetEnvironmentVariable("HF_TOKEN");
+        if (!string.IsNullOrWhiteSpace(hfToken))
         {
-            // Try fallback endpoint
-            var fallback = await client.PostAsync(secondUrl, content);
-            if (!fallback.IsSuccessStatusCode)
-            {
-                var body1 = await response.Content.ReadAsStringAsync();
-                var body2 = await fallback.Content.ReadAsStringAsync();
-                return StatusCode((int)fallback.StatusCode, new { error = "AI service unreachable", primary = new { url = firstUrl, status = (int)response.StatusCode, body = body1 }, fallback = new { url = secondUrl, status = (int)fallback.StatusCode, body = body2 } });
-            }
-            response = fallback;
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {hfToken}");
         }
 
-        json = await response.Content.ReadAsStringAsync();
-
-        // Gradio returns {"data": ["label"]}
+        // Use HuggingFace Inference API directly instead of Space
+        // This is more reliable and doesn't require dealing with Gradio's queue system
+        var inferenceUrl = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest";
+        var payload = new { inputs = request.Text };
+        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        
         string sentiment = "neutral";
+        
         try
         {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("data", out var dataEl) && dataEl.ValueKind == JsonValueKind.Array && dataEl.GetArrayLength() > 0)
+            var response = await client.PostAsync(inferenceUrl, content);
+            
+            if (!response.IsSuccessStatusCode)
             {
-                sentiment = dataEl[0].GetString() ?? "neutral";
+                var errorBody = await response.Content.ReadAsStringAsync();
+                // Fallback to neutral on error
+                sentiment = "neutral";
+            }
+            else
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                
+                // HF Inference API returns: [[{"label": "positive", "score": 0.98}]]
+                try
+                {
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
+                    {
+                        var firstArray = doc.RootElement[0];
+                        if (firstArray.ValueKind == JsonValueKind.Array && firstArray.GetArrayLength() > 0)
+                        {
+                            var result = firstArray[0];
+                            if (result.TryGetProperty("label", out var labelEl))
+                            {
+                                var label = labelEl.GetString() ?? "neutral";
+                                label = label.ToLower();
+                                
+                                // Normalize label
+                                if (label.Contains("pos"))
+                                {
+                                    sentiment = "positive";
+                                }
+                                else if (label.Contains("neg"))
+                                {
+                                    sentiment = "negative";
+                                }
+                                else
+                                {
+                                    sentiment = "neutral";
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // fallback keeps sentiment as neutral
+                }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // fallback keeps sentiment as neutral
+            // Fallback to neutral on any error
+            sentiment = "neutral";
         }
 
         // Save to DB

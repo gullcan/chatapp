@@ -7,3 +7,6 @@
 *.sqlite3
 .env
 .DS_Store
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json

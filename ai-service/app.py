@@ -35,7 +35,15 @@ demo = gr.Interface(
     outputs=gr.Textbox(label="Sentiment"),
     title="Sentiment Analysis Service",
     description="Returns positive / neutral / negative",
+    api_name="predict"  # Explicitly name the API endpoint
 )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    # For Hugging Face Spaces deployment
+    # Launch without queue for direct API access
+    demo.launch(
+        share=False,
+        server_name="0.0.0.0",
+        server_port=7860,
+        show_api=True
+    )
