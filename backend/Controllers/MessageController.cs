@@ -50,7 +50,7 @@ public class MessageController : ControllerBase
         }
 
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(30);
+        client.Timeout = TimeSpan.FromSeconds(60);
 
         // AI service base url from env: AI_SERVICE_URL (e.g., https://<username>-ai-service.hf.space)
         var aiBaseUrl = _config["AI_SERVICE_URL"] ?? Environment.GetEnvironmentVariable("AI_SERVICE_URL");
@@ -62,14 +62,29 @@ public class MessageController : ControllerBase
         var payload = new { data = new string[] { request.Text } };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-        var aiUrl = aiBaseUrl.TrimEnd('/') + "/api/predict";
-        var response = await client.PostAsync(aiUrl, content);
+        var baseUrl = aiBaseUrl.TrimEnd('/');
+        var firstUrl = baseUrl + "/api/predict";
+        var secondUrl = baseUrl + "/run/predict"; // fallback for older Gradio
+
+        HttpResponseMessage response;
+        string json;
+
+        // Try primary endpoint
+        response = await client.PostAsync(firstUrl, content);
         if (!response.IsSuccessStatusCode)
         {
-            return StatusCode((int)response.StatusCode, new { error = "AI service unreachable" });
+            // Try fallback endpoint
+            var fallback = await client.PostAsync(secondUrl, content);
+            if (!fallback.IsSuccessStatusCode)
+            {
+                var body1 = await response.Content.ReadAsStringAsync();
+                var body2 = await fallback.Content.ReadAsStringAsync();
+                return StatusCode((int)fallback.StatusCode, new { error = "AI service unreachable", primary = new { url = firstUrl, status = (int)response.StatusCode, body = body1 }, fallback = new { url = secondUrl, status = (int)fallback.StatusCode, body = body2 } });
+            }
+            response = fallback;
         }
 
-        var json = await response.Content.ReadAsStringAsync();
+        json = await response.Content.ReadAsStringAsync();
 
         // Gradio returns {"data": ["label"]}
         string sentiment = "neutral";
