@@ -33,6 +33,12 @@ project-root/
 - Render: `backend/`
 - Hugging Face Spaces: `ai-service/`
 
+## Working Demo Links
+
+- Web (Vercel): https://chatapp-gold-omega.vercel.app
+- Backend API (Render): https://chatapp-fjma.onrender.com
+- AI Service (Hugging Face Spaces): https://gulcan9-ai-service.hf.space
+
 ## Environment Variables
 
 - Backend:
