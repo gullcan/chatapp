@@ -16,12 +16,24 @@ var connString = builder.Configuration.GetConnectionString("Default")
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connString));
 
+// Configure CORS for the deployed frontend origin(s)
+// FRONTEND_ORIGIN may be a single origin or comma-separated list
+var frontendOriginCsv = builder.Configuration["FRONTEND_ORIGIN"]
+                        ?? Environment.GetEnvironmentVariable("FRONTEND_ORIGIN")
+                        ?? "https://chatapp-gold-omega.vercel.app"; // default
+
+var allowedOrigins = frontendOriginCsv
+    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+    .Select(o => o.Trim())
+    .ToArray();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy => policy.AllowAnyOrigin()
-                        .AllowAnyMethod()
-                        .AllowAnyHeader());
+    options.AddPolicy("FrontendOnly",
+        policy => policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod());
 });
 
 builder.Services.AddHttpClient();
@@ -35,7 +47,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll"); // 🔹 CORS aktif et
+app.UseCors("FrontendOnly"); // 🔹 Only allow frontend origin
 app.MapControllers();    // 🔹 Controller route’larını ekle
 
 app.Run();
