@@ -8,7 +8,7 @@ Project structure:
 project-root/
 ├── frontend/           # React web app (deploy on Vercel)
 ├── mobile/             # React Native CLI app (instructions + sample screens)
-├── backend/            # .NET Core API with SQLite (deploy on Render)
+├── backend/            # .NET Core API with SQLite (deploy on Render) ← backend moved here
 └── ai-service/         # Python + Gradio service (deploy on Hugging Face Spaces)
 ```
 
@@ -30,7 +30,7 @@ project-root/
 ## Deploy Targets
 
 - Vercel: `frontend/`
-- Render: `backend/`
+- Render: `backend/` (set the service root/working directory to `backend/`)
 - Hugging Face Spaces: `ai-service/`
 
 ## Working Demo Links
