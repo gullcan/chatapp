@@ -1,0 +1,9 @@
+/bin/
+/obj/
+/node_modules/
+/*.db
+*.log
+*.sqlite
+*.sqlite3
+.env
+.DS_Store
