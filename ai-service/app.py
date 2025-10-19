@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # For Hugging Face Spaces deployment
     # Launch without queue for direct API access
     demo.launch(
-        share=False,
+        share=True,
         server_name="0.0.0.0",
         server_port=7860,
         show_api=True
