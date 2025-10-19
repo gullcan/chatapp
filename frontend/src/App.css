@@ -24,6 +24,35 @@
   margin-bottom: 10px;
 }
 
+.chat-entry {
+  border-bottom: 1px solid #eee;
+  padding: 8px 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.badge-positive {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.badge-neutral {
+  background: #eef2f7;
+  color: #3c4043;
+}
+
+.badge-negative {
+  background: #fce8e6;
+  color: #a50e0e;
+}
+
 .chat-input {
   display: flex;
   gap: 10px;

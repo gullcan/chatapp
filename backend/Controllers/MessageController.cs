@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ChatBackend.Data;
 using ChatBackend.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -20,6 +21,24 @@ public class MessageController : ControllerBase
         _httpClientFactory = httpClientFactory;
         _db = db;
         _config = config;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetMessages([FromQuery] int limit = 50)
+    {
+        if (limit <= 0 || limit > 200) limit = 50;
+        var items = await _db.Messages
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(limit)
+            .Select(m => new {
+                id = m.Id,
+                username = m.Username,
+                text = m.Text,
+                sentiment = m.Sentiment,
+                createdAt = m.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(items);
     }
 
     [HttpPost("analyze")]
