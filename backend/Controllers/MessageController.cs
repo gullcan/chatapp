@@ -50,14 +50,11 @@ public class MessageController : ControllerBase
         }
 
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(90); // Increased for queue polling
+        client.Timeout = TimeSpan.FromSeconds(60); // Align with deployment timeout requirement
 
-        // AI service base url from env: AI_SERVICE_URL (e.g., https://<username>-ai-service.hf.space)
+        // Optional: AI service base url from env: AI_SERVICE_URL (e.g., "https://gulcan9-ai-service.hf.space")
+        // Note: Current implementation uses Hugging Face Inference API directly; AI_SERVICE_URL is not required.
         var aiBaseUrl = _config["AI_SERVICE_URL"] ?? Environment.GetEnvironmentVariable("AI_SERVICE_URL");
-        if (string.IsNullOrWhiteSpace(aiBaseUrl))
-        {
-            return StatusCode(500, new { error = "AI_SERVICE_URL is not configured" });
-        }
 
         // Add HuggingFace API token for authentication
         var hfToken = _config["HF_TOKEN"] ?? Environment.GetEnvironmentVariable("HF_TOKEN");
@@ -67,7 +64,7 @@ public class MessageController : ControllerBase
         }
 
         // Use HuggingFace Inference API directly instead of Space
-        // This is more reliable and doesn't require dealing with Gradio's queue system
+        // This is more reliable for server-to-server and avoids Gradio queue constraints
         var inferenceUrl = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest";
         var payload = new { inputs = request.Text };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
