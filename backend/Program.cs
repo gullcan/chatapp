@@ -8,11 +8,40 @@ builder.Services.AddControllers(); // 🔹 Controller ekle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Use connection string from env/config if provided, else default to chat.db
+// Use connection string from env/config if provided, else default to a writeable path (/data/chat.db for Render)
 var connString = builder.Configuration.GetConnectionString("Default")
                  ?? builder.Configuration["ConnectionStrings:Default"]
                  ?? Environment.GetEnvironmentVariable("ConnectionStrings__Default")
-                 ?? "Data Source=chat.db";
+                 ?? "Data Source=/data/chat.db";
+
+// Ensure SQLite directory exists if a file path is provided
+static void EnsureSqliteDirectory(string cs)
+{
+    const string key = "Data Source=";
+    var idx = cs.IndexOf(key, StringComparison.OrdinalIgnoreCase);
+    if (idx >= 0)
+    {
+        var path = cs.Substring(idx + key.Length).Trim();
+        // If connection string contains additional segments (e.g., ";Cache=Shared"), split them
+        var semicolonIdx = path.IndexOf(';');
+        if (semicolonIdx >= 0)
+            path = path.Substring(0, semicolonIdx);
+        try
+        {
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+        }
+        catch
+        {
+            // Best-effort: if we can't create directory, let EF throw a clear error later
+        }
+    }
+}
+
+EnsureSqliteDirectory(connString);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connString));
