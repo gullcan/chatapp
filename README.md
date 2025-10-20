@@ -22,7 +22,7 @@ project-root/
 ## Data Flow
 
 1. User types a message on Web/Mobile.
-2. Message is sent to Backend API `/api/messages`.
+2. Message is sent to Backend API `/api/message/analyze`.
 3. Backend stores the message in SQLite and calls AI Service.
 4. AI returns sentiment; backend returns it to frontend and stores result.
 5. Frontend displays the message with sentiment badge.
@@ -35,21 +35,28 @@ project-root/
 
 ## Working Demo Links
 
-- Web (Vercel): https://chatapp-gold-omega.vercel.app
-- Backend API (Render): https://chatapp-fjma.onrender.com
-- AI Service (Hugging Face Spaces): https://gulcan9-ai-service.hf.space
+- Web (Vercel - production): https://chatapp-gulcans-projects-f56e0763.vercel.app
+- Web (Vercel - previews):
+  - https://chatapp-seven-flax.vercel.app
+  - https://chatapp-git-main-gulcans-projects-f56e0763.vercel.app
+  - https://chatapp-eacaxxp2d-gulcans-projects-f56e0763.vercel.app
+- Backend API (Render): https://chatapp-azte.onrender.com
+- AI Service (Hugging Face Spaces): https://gulcan99-ai-service.hf.space
 
 ## Environment Variables
 
-- Backend:
-  - `AI_SERVICE_URL` = your Hugging Face Space API URL like `https://<username>-ai-service.hf.space` (no trailing slash)
-  - `ConnectionStrings__Default` = `Data Source=chat.db`
+- Backend (Render):
+  - `HF_TOKEN` = Hugging Face token with "Make calls to Inference Providers"
+  - `ConnectionStrings__Default` = `Data Source=/data/chat.db`
+  - `FRONTEND_ORIGIN` = CSV of allowed origins, e.g.
+    `https://chatapp-gulcans-projects-f56e0763.vercel.app,https://chatapp-seven-flax.vercel.app`
+  - Optional: `AI_SERVICE_URL` = `https://gulcan99-ai-service.hf.space` (not required when using Inference API)
 
-- Frontend:
-  - `VITE_BACKEND_URL` = Render backend URL like `https://your-backend.onrender.com`
+- Frontend (Vercel):
+  - `REACT_APP_BACKEND_URL` = `https://chatapp-azte.onrender.com`
 
-- Mobile:
-  - Use the same backend URL in `mobile/api.js`.
+- Mobile (React Native CLI):
+  - Set `BACKEND_URL` in `mobile/api.js` (or via env) to `https://chatapp-azte.onrender.com`
 
 ## Day-by-Day Plan
 
