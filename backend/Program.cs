@@ -50,7 +50,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // FRONTEND_ORIGIN may be a single origin or comma-separated list
 var frontendOriginCsv = builder.Configuration["FRONTEND_ORIGIN"]
                         ?? Environment.GetEnvironmentVariable("FRONTEND_ORIGIN")
-                        ?? "https://chatapp-gold-omega.vercel.app"; // default
+                        ?? "https://chatapp-gulcans-projects-f56e0763.vercel.app"; // default
 
 var allowedOrigins = frontendOriginCsv
     .Split(',', StringSplitOptions.RemoveEmptyEntries)
